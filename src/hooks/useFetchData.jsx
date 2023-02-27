@@ -52,10 +52,8 @@ const useFetchData = ({
 
     useEffect(() => {
         const abortController = new AbortController();
-        console.count('fetch')
-
         getData(abortController);
-        
+
         return () => {
             setError(undefined);
             abortController.abort()

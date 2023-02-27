@@ -12,14 +12,31 @@ const useMediaQuery = () => {
         };
     }, []);
 
-    const smallMobile = useMemo(() => screenWidth < 360, [screenWidth])
-    const largeMobile = useMemo(() => screenWidth > 360, [screenWidth])
-    const tablet = useMemo(() => screenWidth > 576, [screenWidth])
-    const largeTablet = useMemo(() => screenWidth > 768, [screenWidth])
-    const desktop = useMemo(() => screenWidth > 992, [screenWidth])
-    const largeDesktop = useMemo(() => screenWidth > 1200, [screenWidth])
+    const screens = useMemo(() => ({
+        smallMobile: 360,
+        largeMobile: 414,
+        smallTablet: 576,
+        largeTablet: 768,
+        desktop: 992,
+        largeDesktop: 1200
+    }), [])
 
-    return { screenWidth, screenSizes: { smallMobile, largeMobile, tablet, largeTablet, desktop, largeDesktop } };
+    const smallMobileWidth = useMemo(() => screenWidth < screens.smallMobile, [screenWidth, screens])
+    const largeMobileWidth = useMemo(() => screenWidth > screens.smallMobile, [screenWidth, screens])
+    const tabletWidth = useMemo(() => screenWidth > screens.smallTablet, [screenWidth, screens])
+    const largeTabletWidth = useMemo(() => screenWidth > screens.largeTablet, [screenWidth, screens])
+    const desktopWidth = useMemo(() => screenWidth > screens.desktop, [screenWidth, screens])
+    const largeDesktopWidth = useMemo(() => screenWidth > screens.largeDesktop, [screenWidth, screens])
+
+    const mobileQuery = useMemo(() => `(max-width: ${screens.largeMobile}px)`, [screens])
+    const tabletQuery = useMemo(() => `(max-width: ${screens.largeTablet}px)`, [screens])
+    const desktopQuery = useMemo(() => `(min-width: ${screens.largeTablet}px)`, [screens])
+
+    return {
+        screenWidth,
+        screenSize: { smallMobileWidth, largeMobileWidth, tabletWidth, largeTabletWidth, desktopWidth, largeDesktopWidth },
+        queries: {mobileQuery, tabletQuery, desktopQuery}
+    };
 }
 
 export default useMediaQuery;

@@ -1,30 +1,39 @@
-import { useMemo, useState } from "react";
-import useFetchData from "../hooks/useFetchData";
-import Loading from "../containers/Loading";
-import Error from "../containers/Error";
-import useMediaQuery from "../hooks/useMediaQuery";
-import { getFiltered } from "../utlis/getFiltered"
+import {useCallback, useState} from "react";
+import {getFiltered} from "../utlis/getFiltered"
+import * as PropTypes from "prop-types";
+import MainTournament from "../components/MainTournament";
+import PictureComponent from "../components/base/PictureComponent";
 
-const Main = ({ useSearch = true, useChooseTenant = true }) => {
+const Main = ({
+                  useSearch,
+                  receivedData,
+                  tenantId
+              }) => {
 
     const [searchVal, setSearchVal] = useState('');
-    const [tenantId, setTenantId] = useState(1);
 
-    const fetchDataProps = useMemo(() => ({
-        method: "GET",
-        url: `https://micros1-ro.play-online.com/missions/tournaments/list?tenant_id=${tenantId}`,
-        headers: new Headers({
-            'accept': 'application/json'
-        }),
-        options: {}
-    }), [tenantId])
+    const checkDates = useCallback((startDate, endDate) => {
+        if(!startDate || (startDate instanceof Date && !isNaN(startDate))) return false;
+        if(!endDate || (endDate instanceof Date && !isNaN(endDate))) return false;
 
-    const handleTenantChange = ({target: {value}}) => {
-        !isNaN(value) && setTenantId(value)
+        return (new Date(startDate) < new Date() && new Date(endDate) > new Date());
+    }, [])
+
+    const gamePictureStyle = {
+        width: "30vw",
+        height: "auto",
     }
 
-    const { receivedData, loading, error } = useFetchData(fetchDataProps);
-    const hasReceivedData = useMemo(() => !!receivedData && Array.isArray(receivedData) && receivedData.length > 0, [receivedData]);
+    const gridW = "30vw"
+
+    const gamePictureWrapperStyle = {
+        display: "grid",
+        gridTemplateColumns: `${gridW} ${gridW} ${gridW}`,
+        gap: ".5rem",
+        padding: ".75rem"
+    }
+
+    const placeholderImage = "https://www.firstbenefits.org/wp-content/uploads/2017/10/placeholder-1024x1024.png"
 
     return (
         <main>
@@ -32,28 +41,39 @@ const Main = ({ useSearch = true, useChooseTenant = true }) => {
                 useSearch &&
                 <div>
                     <label>Search: </label>
-                    <input value={searchVal} onChange={({ target: { value } }) => setSearchVal(value)} />
-                </div>
-            }
-            {
-                useChooseTenant &&
-                <div>
-                    <label>Choose Tenant: </label>
-                    <input value={tenantId} type={"number"} step={1} min={1} onChange={handleTenantChange} />
+                    <input value={searchVal} onChange={({target: {value}}) => setSearchVal(value)}/>
                 </div>
             }
             <div>
-                {
-                    !!error ? <Error error={error} /> :
-                        loading ? <Loading /> :
-                            hasReceivedData && receivedData
-                                .map(({ tournaments }) =>
-                                    getFiltered(tournaments, searchVal).map(({ name, id }) =>
-                                        <div key={`tournament-${id}`}>
-                                            {name}
-                                        </div>
-                                    )
-                                )
+                {receivedData
+                    .map(({tournaments}) =>
+                        getFiltered(tournaments, searchVal).map((tournament, tournamentIndex) => {
+                            const {start_date, end_date, meta: {games}} = tournament;
+
+                            return (
+                                <div key={`tournament-wrapper-${tournamentIndex}`}>
+                                    {
+                                        checkDates(start_date, end_date) &&
+                                        <MainTournament tournament={tournament}
+                                                        key={`tournament-${tenantId}-${tournamentIndex}`}
+                                        />
+                                    }
+                                    <div style={gamePictureWrapperStyle}>
+                                        {
+                                            games.map(game =>
+                                                <PictureComponent key={`tournament-game-${tenantId}-${game}`}
+                                                                  style={gamePictureStyle}
+                                                                  altText={`game-number-${game}`}
+                                                                  mobileSrc={placeholderImage}
+                                                                  desktopSrc={placeholderImage}
+                                                />
+                                            )
+                                        }
+                                    </div>
+                                </div>
+                            )
+                        })
+                    )
                 }
             </div>
         </main>
@@ -61,3 +81,15 @@ const Main = ({ useSearch = true, useChooseTenant = true }) => {
 }
 
 export default Main;
+
+Main.defaultProps = {
+    useSearch: false,
+}
+
+Main.propTypes = {
+    useSearch: PropTypes.bool,
+    useChooseTenant: PropTypes.bool,
+    handleTenantChange: PropTypes.func,
+    receivedData: PropTypes.any,
+    tenantId: PropTypes.number
+}
